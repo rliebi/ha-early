@@ -102,7 +102,7 @@
       "message": "Du musst entweder eine Aktivitäts-ID oder einen Aktivitätsnamen angeben."
     },
     "activity_not_found": {
-      "message": "Keine Aktivität mit dem Namen '{activity_name}' gefunden."
+      "message": "Keine Aktivität mit dem Namen {activity_name} gefunden."
     },
     "nothing_tracking": {
       "message": "Es läuft derzeit kein Tracking."
