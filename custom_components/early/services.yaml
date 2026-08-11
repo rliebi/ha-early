@@ -1,0 +1,48 @@
+start_tracking:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: early
+    activity_id:
+      required: false
+      example: "1234567"
+      selector:
+        text:
+    activity_name:
+      required: false
+      example: "Deep Work"
+      selector:
+        text:
+    started_at:
+      required: false
+      selector:
+        datetime:
+    note:
+      required: false
+      example: "Working on the quarterly report"
+      selector:
+        text:
+
+stop_tracking:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: early
+    activity_id:
+      required: false
+      example: "1234567"
+      selector:
+        text:
+    activity_name:
+      required: false
+      example: "Deep Work"
+      selector:
+        text:
+    stopped_at:
+      required: false
+      selector:
+        datetime:

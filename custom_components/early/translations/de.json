@@ -1,0 +1,117 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mit EARLY verbinden",
+        "description": "Gib den API Key und das API Secret ein, die du auf deiner EARLY-Profilseite erzeugt hast (Einstellungen → Konto → API).",
+        "data": {
+          "api_key": "API Key",
+          "api_secret": "API Secret"
+        },
+        "data_description": {
+          "api_key": "Der API Key aus deinem EARLY-Konto.",
+          "api_secret": "Das zum API Key gehörende API Secret."
+        }
+      }
+    },
+    "error": {
+      "auth": "API Key oder API Secret ist ungültig.",
+      "connection": "Verbindung zur EARLY-API nicht möglich.",
+      "unknown": "Ein unbekannter Fehler ist aufgetreten."
+    },
+    "abort": {
+      "already_configured": "Dieses EARLY-Konto ist bereits eingerichtet."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "tracking_active": {
+        "name": "Tracking aktiv"
+      }
+    },
+    "sensor": {
+      "current_activity": {
+        "name": "Aktuelle Aktivität"
+      },
+      "tracking_started_at": {
+        "name": "Tracking gestartet um"
+      }
+    }
+  },
+  "services": {
+    "start_tracking": {
+      "name": "Tracking starten",
+      "description": "Startet die Zeiterfassung für eine Aktivität.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das zu verwendende EARLY-Konto. Nur nötig, wenn mehrere Konten eingerichtet sind."
+        },
+        "activity_id": {
+          "name": "Aktivitäts-ID",
+          "description": "Die ID der zu erfassenden Aktivität. Entweder diese oder den Aktivitätsnamen angeben."
+        },
+        "activity_name": {
+          "name": "Aktivitätsname",
+          "description": "Der Name der zu erfassenden Aktivität (Groß-/Kleinschreibung egal). Entweder diesen oder die Aktivitäts-ID angeben."
+        },
+        "started_at": {
+          "name": "Startzeit",
+          "description": "Wann das Tracking beginnen soll. Standard ist jetzt."
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "Eine optionale Notiz für das Tracking."
+        }
+      }
+    },
+    "stop_tracking": {
+      "name": "Tracking stoppen",
+      "description": "Stoppt das aktuell laufende Tracking.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das zu verwendende EARLY-Konto. Nur nötig, wenn mehrere Konten eingerichtet sind."
+        },
+        "activity_id": {
+          "name": "Aktivitäts-ID",
+          "description": "Optional. Die zu stoppende Aktivität. Wird nichts angegeben, wird das laufende Tracking gestoppt."
+        },
+        "activity_name": {
+          "name": "Aktivitätsname",
+          "description": "Optional. Der Name der zu stoppenden Aktivität. Wird nichts angegeben, wird das laufende Tracking gestoppt."
+        },
+        "stopped_at": {
+          "name": "Stoppzeit",
+          "description": "Wann das Tracking enden soll. Standard ist jetzt."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "entry_not_found": {
+      "message": "Kein EARLY-Konto für den Config-Eintrag {config_entry_id} gefunden."
+    },
+    "no_entries": {
+      "message": "Es ist kein EARLY-Konto eingerichtet."
+    },
+    "multiple_entries": {
+      "message": "Es sind mehrere EARLY-Konten eingerichtet. Gib mit 'config_entry_id' an, welches verwendet werden soll."
+    },
+    "activity_required": {
+      "message": "Du musst entweder eine Aktivitäts-ID oder einen Aktivitätsnamen angeben."
+    },
+    "activity_not_found": {
+      "message": "Keine Aktivität mit dem Namen '{activity_name}' gefunden."
+    },
+    "nothing_tracking": {
+      "message": "Es läuft derzeit kein Tracking."
+    },
+    "auth_error": {
+      "message": "Die Authentifizierung mit der EARLY-API ist fehlgeschlagen. Prüfe API Key und Secret."
+    },
+    "api_error": {
+      "message": "Die EARLY-API hat einen Fehler zurückgegeben: {error}"
+    }
+  }
+}
