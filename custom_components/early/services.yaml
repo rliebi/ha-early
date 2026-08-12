@@ -36,3 +36,11 @@ stop_tracking:
       required: false
       selector:
         datetime:
+
+cancel_tracking:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: early

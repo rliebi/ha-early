@@ -17,6 +17,7 @@ CONF_API_SECRET = "api_secret"  # noqa: S105 - config key name, not a secret val
 # Services
 SERVICE_START_TRACKING = "start_tracking"
 SERVICE_STOP_TRACKING = "stop_tracking"
+SERVICE_CANCEL_TRACKING = "cancel_tracking"
 
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
 ATTR_ACTIVITY_ID = "activity_id"

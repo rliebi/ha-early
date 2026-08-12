@@ -28,6 +28,7 @@ from .const import (
     ATTR_STARTED_AT,
     ATTR_STOPPED_AT,
     DOMAIN,
+    SERVICE_CANCEL_TRACKING,
     SERVICE_START_TRACKING,
     SERVICE_STOP_TRACKING,
 )
@@ -49,6 +50,12 @@ STOP_TRACKING_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string,
         vol.Optional(ATTR_STOPPED_AT): cv.datetime,
+    }
+)
+
+CANCEL_TRACKING_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string,
     }
 )
 
@@ -141,26 +148,26 @@ def async_setup_services(hass: HomeAssistant) -> None:
         """Stop the currently running tracking."""
         entry = _get_entry(hass, call)
         client = entry.runtime_data.client
-        try:
-            if not await client.async_get_current_tracking():
-                raise ServiceValidationError(
-                    translation_domain=DOMAIN,
-                    translation_key="nothing_tracking",
-                )
-            stopped_at = call.data.get(ATTR_STOPPED_AT)
-            if stopped_at is not None:
-                stopped_at = dt_util.as_utc(stopped_at)
-            result = await client.async_stop_tracking(stopped_at=stopped_at)
-        except EarlyApiClientAuthenticationError as exception:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="auth_error"
-            ) from exception
-        except EarlyApiClientError as exception:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="api_error",
-                translation_placeholders={"error": str(exception)},
-            ) from exception
+        if not await _guard(client.async_get_current_tracking):
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key="nothing_tracking"
+            )
+        stopped_at = call.data.get(ATTR_STOPPED_AT)
+        if stopped_at is not None:
+            stopped_at = dt_util.as_utc(stopped_at)
+        result = await _guard(lambda: client.async_stop_tracking(stopped_at=stopped_at))
+        await entry.runtime_data.coordinator.async_request_refresh()
+        return _as_response(result)
+
+    async def async_cancel_tracking(call: ServiceCall) -> ServiceResponse:
+        """Cancel the current tracking without creating a time entry."""
+        entry = _get_entry(hass, call)
+        client = entry.runtime_data.client
+        if not await _guard(client.async_get_current_tracking):
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key="nothing_tracking"
+            )
+        result = await _guard(client.async_cancel_tracking)
         await entry.runtime_data.coordinator.async_request_refresh()
         return _as_response(result)
 
@@ -178,12 +185,36 @@ def async_setup_services(hass: HomeAssistant) -> None:
         schema=STOP_TRACKING_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
     )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_CANCEL_TRACKING,
+        async_cancel_tracking,
+        schema=CANCEL_TRACKING_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
 
 
 def async_unload_services(hass: HomeAssistant) -> None:
     """Remove the EARLY services."""
     hass.services.async_remove(DOMAIN, SERVICE_START_TRACKING)
     hass.services.async_remove(DOMAIN, SERVICE_STOP_TRACKING)
+    hass.services.async_remove(DOMAIN, SERVICE_CANCEL_TRACKING)
+
+
+async def _guard(factory: Any) -> Any:
+    """Await an API coroutine, mapping client errors to HomeAssistantError."""
+    try:
+        return await factory()
+    except EarlyApiClientAuthenticationError as exception:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN, translation_key="auth_error"
+        ) from exception
+    except EarlyApiClientError as exception:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="api_error",
+            translation_placeholders={"error": str(exception)},
+        ) from exception
 
 
 def _as_response(result: Any) -> ServiceResponse:

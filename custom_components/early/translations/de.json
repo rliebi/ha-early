@@ -86,6 +86,16 @@
           "description": "Wann das Tracking enden soll. Standard ist jetzt."
         }
       }
+    },
+    "cancel_tracking": {
+      "name": "Tracking verwerfen",
+      "description": "Verwirft das aktuelle Tracking ohne einen Zeiteintrag zu erstellen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das zu verwendende EARLY-Konto. Nur nötig, wenn mehrere Konten eingerichtet sind."
+        }
+      }
     }
   },
   "exceptions": {

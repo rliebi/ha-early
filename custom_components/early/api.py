@@ -194,6 +194,14 @@ class EarlyApiClient:
             data=payload,
         )
 
+    async def async_cancel_tracking(self) -> dict[str, Any]:
+        """Cancel the current tracking without creating a time entry.
+
+        Maps to ``DELETE /tracking`` — used to discard a tracking, e.g. when a
+        navigation was aborted and the trip should not be recorded.
+        """
+        return await self._authed_request("delete", f"{API_BASE}/tracking")
+
     async def _async_sign_in(self) -> str:
         """Exchange API key/secret for a bearer token and cache it."""
         data = await self._api_wrapper(

@@ -86,6 +86,16 @@
           "description": "When the tracking should stop. Defaults to now."
         }
       }
+    },
+    "cancel_tracking": {
+      "name": "Cancel tracking",
+      "description": "Cancels the current tracking without creating a time entry (discards it).",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The EARLY account to use. Only required if you have more than one configured."
+        }
+      }
     }
   },
   "exceptions": {
