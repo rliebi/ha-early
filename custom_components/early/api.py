@@ -13,6 +13,8 @@ from typing import Any
 
 import aiohttp
 
+from .const import LOGGER
+
 # EARLY Public API v4 (formerly the Timeular API). See https://developers.early.app/.
 API_BASE = "https://api.early.app/api/v4"
 
@@ -76,11 +78,27 @@ def _decode_jwt_expiry(token: str) -> float | None:
 
 
 def _verify_response_or_raise(response: aiohttp.ClientResponse) -> None:
-    """Raise a typed error for non-successful responses."""
+    """Raise an authentication error for 401/403 responses.
+
+    Other non-2xx statuses are handled in ``_api_wrapper`` so the server's error
+    message can be included.
+    """
     if response.status in (401, 403):
         msg = "Invalid API key or secret"
         raise EarlyApiClientAuthenticationError(msg)
-    response.raise_for_status()
+
+
+def _extract_error_message(text: str) -> str | None:
+    """Best-effort extraction of the API's error message from a response body."""
+    try:
+        data = json.loads(text)
+    except (ValueError, TypeError):
+        return None
+    if isinstance(data, dict):
+        error = data.get("error")
+        nested = error.get("message") if isinstance(error, dict) else None
+        return data.get("message") or nested
+    return None
 
 
 class EarlyApiClient:
@@ -239,12 +257,25 @@ class EarlyApiClient:
                 )
                 _verify_response_or_raise(response)
                 text = await response.text()
+                if response.status >= 400:  # noqa: PLR2004 - HTTP error range
+                    detail = _extract_error_message(text) or text[:200]
+                    LOGGER.debug(
+                        "EARLY API %s %s -> HTTP %s: %s",
+                        method,
+                        url,
+                        response.status,
+                        detail,
+                    )
+                    msg = f"EARLY API returned HTTP {response.status}: {detail}"
+                    raise EarlyApiClientCommunicationError(msg)  # noqa: TRY301
                 return json.loads(text) if text else {}
 
         except TimeoutError as exception:
+            LOGGER.debug("Timeout calling %s %s", method, url)
             msg = f"Timeout error fetching information - {exception}"
             raise EarlyApiClientCommunicationError(msg) from exception
         except (aiohttp.ClientError, socket.gaierror) as exception:
+            LOGGER.debug("Connection error calling %s %s: %s", method, url, exception)
             msg = f"Error fetching information - {exception}"
             raise EarlyApiClientCommunicationError(msg) from exception
         except json.JSONDecodeError as exception:

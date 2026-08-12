@@ -16,8 +16,8 @@
     },
     "error": {
       "auth": "API Key oder API Secret ist ungültig.",
-      "connection": "Verbindung zur EARLY-API nicht möglich.",
-      "unknown": "Ein unbekannter Fehler ist aufgetreten."
+      "connection": "Verbindung zur EARLY-API nicht möglich. {error}",
+      "unknown": "Ein unbekannter Fehler ist aufgetreten. {error}"
     },
     "abort": {
       "already_configured": "Dieses EARLY-Konto ist bereits eingerichtet."

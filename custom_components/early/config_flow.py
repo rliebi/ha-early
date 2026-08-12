@@ -27,6 +27,7 @@ class EarlyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> config_entries.ConfigFlowResult:
         """Handle the initial step where the user enters API credentials."""
         errors: dict[str, str] = {}
+        placeholders: dict[str, str] = {"api_keys_url": API_KEYS_URL}
         if user_input is not None:
             try:
                 await self._test_credentials(
@@ -39,9 +40,11 @@ class EarlyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             except EarlyApiClientCommunicationError as exception:
                 LOGGER.error("Communication error: %s", exception)
                 errors["base"] = "connection"
+                placeholders["error"] = str(exception)
             except EarlyApiClientError as exception:
-                LOGGER.exception("Unexpected error: %s", exception)
+                LOGGER.exception("Unexpected error")
                 errors["base"] = "unknown"
+                placeholders["error"] = str(exception)
             else:
                 # The API key is stable per account, so it makes a good unique id
                 # and prevents the same account from being added twice.
@@ -52,9 +55,11 @@ class EarlyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     data=user_input,
                 )
 
+        # Provide a default so the {error} placeholder always resolves.
+        placeholders.setdefault("error", "")
         return self.async_show_form(
             step_id="user",
-            description_placeholders={"api_keys_url": API_KEYS_URL},
+            description_placeholders=placeholders,
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_API_KEY): selector.TextSelector(
