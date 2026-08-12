@@ -1,3 +1,5 @@
+<img src="brands/icon.svg" alt="EARLY icon" width="96" align="right" />
+
 # EARLY (Timeular) — Home Assistant integration
 
 [![hacs][hacs-badge]][hacs] [![Validate][validate-badge]][validate-workflow]
