@@ -7,6 +7,9 @@ LOGGER: Logger = getLogger(__package__)
 DOMAIN = "early"
 ATTRIBUTION = "Data provided by the EARLY (Timeular) API"
 
+# Where users generate their API Key & API Secret (EARLY Public API v4).
+API_KEYS_URL = "https://product.early.app"
+
 # Config entry keys
 CONF_API_KEY = "api_key"
 CONF_API_SECRET = "api_secret"  # noqa: S105 - config key name, not a secret value

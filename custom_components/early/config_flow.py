@@ -13,7 +13,7 @@ from .api import (
     EarlyApiClientCommunicationError,
     EarlyApiClientError,
 )
-from .const import CONF_API_KEY, CONF_API_SECRET, DOMAIN, LOGGER
+from .const import API_KEYS_URL, CONF_API_KEY, CONF_API_SECRET, DOMAIN, LOGGER
 
 
 class EarlyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -54,6 +54,7 @@ class EarlyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
+            description_placeholders={"api_keys_url": API_KEYS_URL},
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_API_KEY): selector.TextSelector(

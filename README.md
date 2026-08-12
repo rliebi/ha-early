@@ -5,8 +5,8 @@
 [![hacs][hacs-badge]][hacs] [![Validate][validate-badge]][validate-workflow]
 
 A [HACS][hacs] custom integration that connects Home Assistant to the
-[EARLY][early] time-tracking API (formerly **Timeular**,
-`api.timeular.com/api/v2`). It exposes the current tracking state as entities
+[EARLY][early] time-tracking API (formerly **Timeular**, EARLY Public API **v4**
+at `api.early.app/api/v4`). It exposes the current tracking state as entities
 and adds **start / stop tracking** services you can call from automations,
 scripts, dashboards or voice assistants.
 
@@ -45,8 +45,8 @@ directory and restart Home Assistant.
 
 ## Configuration
 
-1. Generate an **API Key** and **API Secret** in your EARLY account
-   (Settings → Account → API — or via the developer API-access endpoint).
+1. Generate an **API Key** and **API Secret** at
+   [product.early.app](https://product.early.app) (log in → Account → API).
 2. In Home Assistant go to **Settings → Devices & Services → Add Integration**
    and search for **EARLY (Timeular)**.
 3. Paste the API Key and API Secret.
@@ -129,7 +129,7 @@ scripts/lint      # ruff format + check --fix
 
 ## Notes
 
-- The EARLY rebrand kept the public API on the `api.timeular.com/api/v2` host.
+- Uses the EARLY Public API **v4** (`https://api.early.app/api/v4`).
 - The integration polls the current tracking every 60 seconds; the entities also
   refresh immediately after a start/stop service call.
 - This is an unofficial, community project and is not affiliated with EARLY.

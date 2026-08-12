@@ -53,10 +53,14 @@ class EarlyActivitySelect(EarlyEntity, SelectEntity):
 
     def _current_activity_name(self) -> str | None:
         """Return the name of the currently tracked activity, if any."""
-        current = (self.coordinator.data or {}).get("current_tracking")
+        data = self.coordinator.data or {}
+        current = data.get("current_tracking")
         if not current:
             return None
-        return current.get("activity", {}).get("name")
+        activity_id = current.get("activityId")
+        if activity_id is None:
+            return None
+        return data.get("activity_names", {}).get(str(activity_id))
 
     @property
     def options(self) -> list[str]:
@@ -84,11 +88,11 @@ class EarlyActivitySelect(EarlyEntity, SelectEntity):
             return
         client = self.coordinator.config_entry.runtime_data.client
         current = await client.async_get_current_tracking()
-        current_id = str(current["activity"]["id"]) if current else None
+        current_id = str(current["activityId"]) if current else None
 
         if option == OPTION_NOT_TRACKING:
             if current_id is not None:
-                await client.async_stop_tracking(current_id)
+                await client.async_stop_tracking()
             await self.coordinator.async_request_refresh()
             return
 
@@ -98,7 +102,7 @@ class EarlyActivitySelect(EarlyEntity, SelectEntity):
             return
         if current_id is not None:
             # EARLY only allows one active tracking, so stop the old one first.
-            await client.async_stop_tracking(current_id)
+            await client.async_stop_tracking()
         await client.async_start_tracking(target_id)
         await self.coordinator.async_request_refresh()
 

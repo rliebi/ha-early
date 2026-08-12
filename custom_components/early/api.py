@@ -1,4 +1,4 @@
-"""API client for the EARLY (formerly Timeular) Public API v2."""
+"""API client for the EARLY (formerly Timeular) Public API v4."""
 
 from __future__ import annotations
 
@@ -13,9 +13,8 @@ from typing import Any
 
 import aiohttp
 
-# The public API host did not change with the Timeular -> EARLY rebrand; it is
-# still served from api.timeular.com. See https://developers.early.app/.
-API_BASE = "https://api.timeular.com/api/v2"
+# EARLY Public API v4 (formerly the Timeular API). See https://developers.early.app/.
+API_BASE = "https://api.early.app/api/v4"
 
 # Number of seconds each individual request is allowed to take.
 REQUEST_TIMEOUT = 10
@@ -107,13 +106,20 @@ class EarlyApiClient:
         """Validate the credentials by performing a sign-in."""
         await self._async_sign_in()
 
-    async def async_get_activities(self) -> list[dict[str, Any]]:
-        """Return the list of (non-archived) activities."""
-        data = await self._authed_request("get", f"{API_BASE}/activities")
-        return data.get("activities", [])
+    async def async_get_activities(self) -> dict[str, Any]:
+        """Return the raw activities payload.
+
+        The v4 endpoint returns ``activities`` (active), ``inactiveActivities``
+        and ``archivedActivities``.
+        """
+        return await self._authed_request("get", f"{API_BASE}/activities")
 
     async def async_get_current_tracking(self) -> dict[str, Any] | None:
-        """Return the currently running tracking, or ``None`` if idle."""
+        """Return the currently running tracking, or ``None`` if idle.
+
+        The tracking object contains ``activityId`` (a string), ``startedAt``
+        and an optional ``note``; the activity name must be resolved separately.
+        """
         data = await self._authed_request("get", f"{API_BASE}/tracking")
         return data.get("currentTracking")
 
@@ -135,14 +141,17 @@ class EarlyApiClient:
 
     async def async_stop_tracking(
         self,
-        activity_id: str,
         stopped_at: datetime | None = None,
     ) -> dict[str, Any]:
-        """Stop tracking the given activity."""
+        """Stop the currently running tracking.
+
+        In API v4 stopping is not activity-scoped: there is only ever one
+        running tracking, and ``POST /tracking/stop`` stops it.
+        """
         payload = {"stoppedAt": format_timestamp(stopped_at)}
         return await self._authed_request(
             "post",
-            f"{API_BASE}/tracking/{activity_id}/stop",
+            f"{API_BASE}/tracking/stop",
             data=payload,
         )
 

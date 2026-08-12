@@ -44,8 +44,6 @@ START_TRACKING_SCHEMA = vol.Schema(
 STOP_TRACKING_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string,
-        vol.Exclusive(ATTR_ACTIVITY_ID, "activity"): cv.string,
-        vol.Exclusive(ATTR_ACTIVITY_NAME, "activity"): cv.string,
         vol.Optional(ATTR_STOPPED_AT): cv.datetime,
     }
 )
@@ -132,28 +130,19 @@ def async_setup_services(hass: HomeAssistant) -> None:
         return _as_response(result)
 
     async def async_stop_tracking(call: ServiceCall) -> ServiceResponse:
-        """Stop the current tracking (or the one for a given activity)."""
+        """Stop the currently running tracking."""
         entry = _get_entry(hass, call)
         client = entry.runtime_data.client
         try:
-            if ATTR_ACTIVITY_ID in call.data or ATTR_ACTIVITY_NAME in call.data:
-                activity_id = _resolve_activity_id(entry, call)
-            else:
-                current = await client.async_get_current_tracking()
-                if not current:
-                    raise ServiceValidationError(
-                        translation_domain=DOMAIN,
-                        translation_key="nothing_tracking",
-                    )
-                activity_id = str(current["activity"]["id"])
-
+            if not await client.async_get_current_tracking():
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="nothing_tracking",
+                )
             stopped_at = call.data.get(ATTR_STOPPED_AT)
             if stopped_at is not None:
                 stopped_at = dt_util.as_utc(stopped_at)
-            result = await client.async_stop_tracking(
-                activity_id=activity_id,
-                stopped_at=stopped_at,
-            )
+            result = await client.async_stop_tracking(stopped_at=stopped_at)
         except EarlyApiClientAuthenticationError as exception:
             raise HomeAssistantError(
                 translation_domain=DOMAIN, translation_key="auth_error"

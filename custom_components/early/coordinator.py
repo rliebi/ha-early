@@ -22,13 +22,24 @@ class EarlyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Fetch the current tracking state and the list of activities."""
         client = self.config_entry.runtime_data.client
         try:
-            activities = await client.async_get_activities()
+            activities_payload = await client.async_get_activities()
             current_tracking = await client.async_get_current_tracking()
         except EarlyApiClientAuthenticationError as exception:
             raise ConfigEntryAuthFailed(exception) from exception
         except EarlyApiClientError as exception:
             raise UpdateFailed(exception) from exception
+
+        active = activities_payload.get("activities", [])
+        # Build an id -> name map across every activity list so a running
+        # tracking can be named even if its activity is inactive or archived.
+        activity_names: dict[str, str] = {}
+        for key in ("activities", "inactiveActivities", "archivedActivities"):
+            for activity in activities_payload.get(key, []):
+                if (activity_id := activity.get("id")) is not None:
+                    activity_names[str(activity_id)] = activity.get("name")
+
         return {
-            "activities": activities,
+            "activities": active,
+            "activity_names": activity_names,
             "current_tracking": current_tracking,
         }

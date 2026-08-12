@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Mit EARLY verbinden",
-        "description": "Gib den API Key und das API Secret ein, die du auf deiner EARLY-Profilseite erzeugt hast (Einstellungen → Konto → API).",
+        "description": "Erzeuge einen API Key und ein API Secret unter {api_keys_url} (einloggen → Konto → API) und füge sie unten ein.",
         "data": {
           "api_key": "API Key",
           "api_secret": "API Secret"
@@ -80,14 +80,6 @@
         "config_entry_id": {
           "name": "Konto",
           "description": "Das zu verwendende EARLY-Konto. Nur nötig, wenn mehrere Konten eingerichtet sind."
-        },
-        "activity_id": {
-          "name": "Aktivitäts-ID",
-          "description": "Optional. Die zu stoppende Aktivität. Wird nichts angegeben, wird das laufende Tracking gestoppt."
-        },
-        "activity_name": {
-          "name": "Aktivitätsname",
-          "description": "Optional. Der Name der zu stoppenden Aktivität. Wird nichts angegeben, wird das laufende Tracking gestoppt."
         },
         "stopped_at": {
           "name": "Stoppzeit",

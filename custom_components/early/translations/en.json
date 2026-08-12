@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Connect to EARLY",
-        "description": "Enter the API Key and API Secret you generated on your EARLY profile page (Settings → Account → API).",
+        "description": "Generate an API Key and API Secret at {api_keys_url} (log in → Account → API), then paste them below.",
         "data": {
           "api_key": "API Key",
           "api_secret": "API Secret"
@@ -80,14 +80,6 @@
         "config_entry_id": {
           "name": "Account",
           "description": "The EARLY account to use. Only required if you have more than one configured."
-        },
-        "activity_id": {
-          "name": "Activity ID",
-          "description": "Optional. The activity to stop. If omitted, the currently running tracking is stopped."
-        },
-        "activity_name": {
-          "name": "Activity name",
-          "description": "Optional. The name of the activity to stop. If omitted, the currently running tracking is stopped."
         },
         "stopped_at": {
           "name": "Stopped at",

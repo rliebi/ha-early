@@ -30,7 +30,12 @@ def _current_activity_name(data: dict[str, Any]) -> str | None:
     current = data.get("current_tracking")
     if not current:
         return None
-    return current.get("activity", {}).get("name")
+    activity_id = current.get("activityId")
+    if activity_id is None:
+        return None
+    # Resolve the name via the coordinator's id -> name map, falling back to the
+    # raw id if the activity is unknown (e.g. just created).
+    return data.get("activity_names", {}).get(str(activity_id), str(activity_id))
 
 
 def _started_at(data: dict[str, Any]) -> datetime | None:
