@@ -15,11 +15,17 @@ Built on top of the [`integration_blueprint`][blueprint] by @ludeeus.
 - 🔐 UI config flow — sign in with your EARLY **API Key** and **API Secret**.
 - ▶️ `early.start_tracking` — start tracking an activity (by id or name).
 - ⏹️ `early.stop_tracking` — stop the running tracking (or a specific activity).
+- 🔽 `select` **Activity** — a dropdown populated live from your EARLY
+  activities. Picking one starts tracking it (stopping any running tracking
+  first); picking **Not tracking** stops the current tracking.
 - 📟 Entities that reflect the live tracking state:
   - `binary_sensor` **Tracking active** — on while a tracking runs, with the
     running activity, start time and note as attributes.
   - `sensor` **Current activity** — the name of the activity being tracked.
   - `sensor` **Tracking started at** — a timestamp of when tracking started.
+- 🔄 **Automatic token refresh** — the bearer token (a JWT) is renewed in the
+  background before it expires, so the integration keeps working without
+  re-authentication.
 
 ## Installation
 

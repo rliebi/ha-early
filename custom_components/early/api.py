@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import binascii
 import json
 import socket
+import time
 from datetime import UTC, datetime
 from typing import Any
 
@@ -16,6 +19,14 @@ API_BASE = "https://api.timeular.com/api/v2"
 
 # Number of seconds each individual request is allowed to take.
 REQUEST_TIMEOUT = 10
+
+# Refresh the bearer token this many seconds before it actually expires, so a
+# request never goes out with a token that is about to lapse.
+TOKEN_REFRESH_MARGIN = 300
+
+# Fallback lifetime used only when the token's expiry cannot be read from the
+# JWT. Kept short so we re-authenticate well within any real lifetime.
+DEFAULT_TOKEN_TTL = 1800
 
 
 class EarlyApiClientError(Exception):
@@ -45,6 +56,26 @@ def format_timestamp(value: datetime | None = None) -> str:
     return f"{value.strftime('%Y-%m-%dT%H:%M:%S')}.{value.microsecond // 1000:03d}"
 
 
+def _decode_jwt_expiry(token: str) -> float | None:
+    """Return the ``exp`` (epoch seconds) claim of a JWT without verifying it.
+
+    The EARLY access token is a JWT; reading its expiry lets us refresh it
+    proactively. Returns ``None`` if the token is not a parseable JWT.
+    """
+    try:
+        payload_segment = token.split(".")[1]
+    except IndexError:
+        return None
+    # Restore the base64url padding that JWTs strip.
+    padding = "=" * (-len(payload_segment) % 4)
+    try:
+        payload = json.loads(base64.urlsafe_b64decode(payload_segment + padding))
+    except (ValueError, binascii.Error):
+        return None
+    exp = payload.get("exp")
+    return float(exp) if isinstance(exp, (int, float)) else None
+
+
 def _verify_response_or_raise(response: aiohttp.ClientResponse) -> None:
     """Raise a typed error for non-successful responses."""
     if response.status in (401, 403):
@@ -67,6 +98,10 @@ class EarlyApiClient:
         self._api_secret = api_secret
         self._session = session
         self._token: str | None = None
+        # Epoch seconds at which the current token expires (0 = no token yet).
+        self._token_expires_at: float = 0.0
+        # Serialise concurrent sign-ins so a burst of requests triggers one only.
+        self._auth_lock = asyncio.Lock()
 
     async def async_validate(self) -> None:
         """Validate the credentials by performing a sign-in."""
@@ -123,7 +158,25 @@ class EarlyApiClient:
             msg = "Sign-in did not return a token"
             raise EarlyApiClientAuthenticationError(msg)
         self._token = token
+        expiry = _decode_jwt_expiry(token)
+        self._token_expires_at = (
+            expiry if expiry is not None else time.time() + DEFAULT_TOKEN_TTL
+        )
         return token
+
+    async def _async_valid_token(self, *, force: bool = False) -> str:
+        """Return a valid bearer token, refreshing it in the background if due.
+
+        A single lock guards sign-in so a burst of concurrent requests results
+        in at most one re-authentication.
+        """
+        async with self._auth_lock:
+            expired = time.time() >= self._token_expires_at - TOKEN_REFRESH_MARGIN
+            if force or self._token is None or expired:
+                await self._async_sign_in()
+            # Narrowing for the type checker; _async_sign_in always sets it.
+            assert self._token is not None  # noqa: S101
+            return self._token
 
     async def _authed_request(
         self,
@@ -133,22 +186,24 @@ class EarlyApiClient:
         *,
         _retry: bool = True,
     ) -> dict[str, Any]:
-        """Perform an authenticated request, refreshing the token once on 401."""
-        if self._token is None:
-            await self._async_sign_in()
+        """Perform an authenticated request with proactive token refresh.
+
+        The token is refreshed before it expires (see ``_async_valid_token``);
+        a 401 still triggers exactly one forced re-authentication as a safety
+        net in case the server invalidates it early.
+        """
+        token = await self._async_valid_token()
         try:
             return await self._api_wrapper(
                 method=method,
                 url=url,
                 data=data,
-                headers={"Authorization": f"Bearer {self._token}"},
+                headers={"Authorization": f"Bearer {token}"},
             )
         except EarlyApiClientAuthenticationError:
             if not _retry:
                 raise
-            # Token likely expired — sign in again and retry exactly once.
-            self._token = None
-            await self._async_sign_in()
+            await self._async_valid_token(force=True)
             return await self._authed_request(method, url, data=data, _retry=False)
 
     async def _api_wrapper(

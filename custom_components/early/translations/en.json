@@ -29,6 +29,14 @@
         "name": "Tracking active"
       }
     },
+    "select": {
+      "activity": {
+        "name": "Activity",
+        "state": {
+          "not_tracking": "Not tracking"
+        }
+      }
+    },
     "sensor": {
       "current_activity": {
         "name": "Current activity"

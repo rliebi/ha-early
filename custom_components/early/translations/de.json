@@ -29,6 +29,14 @@
         "name": "Tracking aktiv"
       }
     },
+    "select": {
+      "activity": {
+        "name": "Aktivität",
+        "state": {
+          "not_tracking": "Kein Tracking"
+        }
+      }
+    },
     "sensor": {
       "current_activity": {
         "name": "Aktuelle Aktivität"
