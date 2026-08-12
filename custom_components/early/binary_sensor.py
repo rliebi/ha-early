@@ -66,15 +66,12 @@ class EarlyBinarySensor(EarlyEntity, BinarySensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Expose details about the running tracking."""
-        data = self.coordinator.data or {}
-        current = data.get("current_tracking")
+        current = (self.coordinator.data or {}).get("current_tracking")
         if not current:
             return None
-        activity_id = current.get("activityId")
-        names = data.get("activity_names", {})
         return {
-            "activity_id": activity_id,
-            "activity_name": names.get(str(activity_id)) if activity_id else None,
-            "started_at": current.get("startedAt"),
-            "note": (current.get("note") or {}).get("text"),
+            "activity_id": current.get("activity_id"),
+            "activity_name": current.get("activity_name"),
+            "started_at": current.get("started_at"),
+            "note": current.get("note"),
         }

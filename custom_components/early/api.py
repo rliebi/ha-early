@@ -47,6 +47,10 @@ class EarlyApiClientAuthenticationError(EarlyApiClientError):
     """Exception to indicate an authentication error."""
 
 
+class EarlyApiClientConflictError(EarlyApiClientError):
+    """Exception for a 409 conflict (e.g. a tracking is already in progress)."""
+
+
 def format_timestamp(value: datetime | None = None) -> str:
     """Format a datetime the way the EARLY API expects it.
 
@@ -140,11 +144,23 @@ class EarlyApiClient:
     async def async_get_current_tracking(self) -> dict[str, Any] | None:
         """Return the currently running tracking, or ``None`` if idle.
 
-        The tracking object contains ``activityId`` (a string), ``startedAt``
-        and an optional ``note``; the activity name must be resolved separately.
+        The live v4 API returns the tracking object directly, with a nested
+        ``activity`` object (``{id, name, color}``), ``startedAt`` and an
+        optional ``note``. Some documentation instead wraps it in
+        ``currentTracking`` and exposes ``activityId``; both shapes are handled.
         """
         data = await self._authed_request("get", f"{API_BASE}/tracking")
-        return data.get("currentTracking")
+        if not isinstance(data, dict):
+            return None
+        tracking = data.get("currentTracking") if "currentTracking" in data else data
+        if not isinstance(tracking, dict):
+            return None
+        has_tracking = bool(
+            tracking.get("startedAt")
+            or tracking.get("activityId")
+            or tracking.get("activity")
+        )
+        return tracking if has_tracking else None
 
     async def async_start_tracking(
         self,
@@ -278,6 +294,8 @@ class EarlyApiClient:
                     detail,
                 )
                 msg = f"EARLY API returned HTTP {response.status}: {detail}"
+                if response.status == 409:  # noqa: PLR2004 - HTTP Conflict
+                    raise EarlyApiClientConflictError(msg)  # noqa: TRY301
                 raise EarlyApiClientCommunicationError(msg)  # noqa: TRY301
             return json.loads(text) if text else {}
 

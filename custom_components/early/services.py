@@ -15,7 +15,11 @@ from homeassistant.core import (
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.util import dt as dt_util
 
-from .api import EarlyApiClientAuthenticationError, EarlyApiClientError
+from .api import (
+    EarlyApiClientAuthenticationError,
+    EarlyApiClientConflictError,
+    EarlyApiClientError,
+)
 from .const import (
     ATTR_ACTIVITY_ID,
     ATTR_ACTIVITY_NAME,
@@ -119,6 +123,10 @@ def async_setup_services(hass: HomeAssistant) -> None:
         except EarlyApiClientAuthenticationError as exception:
             raise HomeAssistantError(
                 translation_domain=DOMAIN, translation_key="auth_error"
+            ) from exception
+        except EarlyApiClientConflictError as exception:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key="already_tracking"
             ) from exception
         except EarlyApiClientError as exception:
             raise HomeAssistantError(

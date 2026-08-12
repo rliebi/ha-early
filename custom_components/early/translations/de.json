@@ -107,6 +107,9 @@
     "nothing_tracking": {
       "message": "Es läuft derzeit kein Tracking."
     },
+    "already_tracking": {
+      "message": "Es läuft bereits ein Tracking. Stoppe es zuerst oder nutze die Aktivitäts-Auswahl zum Wechseln."
+    },
     "auth_error": {
       "message": "Die Authentifizierung mit der EARLY-API ist fehlgeschlagen. Prüfe API Key und Secret."
     },

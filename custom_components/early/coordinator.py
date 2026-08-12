@@ -41,5 +41,26 @@ class EarlyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return {
             "activities": active,
             "activity_names": activity_names,
-            "current_tracking": current_tracking,
+            "current_tracking": _normalize_tracking(current_tracking, activity_names),
         }
+
+
+def _normalize_tracking(
+    tracking: dict[str, Any] | None,
+    activity_names: dict[str, str],
+) -> dict[str, Any] | None:
+    """Reduce a raw tracking object to a stable, shape-independent structure."""
+    if not tracking:
+        return None
+    activity = tracking.get("activity") or {}
+    raw_id = tracking.get("activityId") or activity.get("id")
+    activity_id = str(raw_id) if raw_id is not None else None
+    name = activity.get("name") or (
+        activity_names.get(activity_id) if activity_id else None
+    )
+    return {
+        "activity_id": activity_id,
+        "activity_name": name,
+        "started_at": tracking.get("startedAt"),
+        "note": (tracking.get("note") or {}).get("text"),
+    }

@@ -30,18 +30,13 @@ def _current_activity_name(data: dict[str, Any]) -> str | None:
     current = data.get("current_tracking")
     if not current:
         return None
-    activity_id = current.get("activityId")
-    if activity_id is None:
-        return None
-    # Resolve the name via the coordinator's id -> name map, falling back to the
-    # raw id if the activity is unknown (e.g. just created).
-    return data.get("activity_names", {}).get(str(activity_id), str(activity_id))
+    return current.get("activity_name") or current.get("activity_id")
 
 
 def _started_at(data: dict[str, Any]) -> datetime | None:
     """Return the (UTC-aware) start time of the current tracking, if any."""
     current = data.get("current_tracking")
-    if not current or not (raw := current.get("startedAt")):
+    if not current or not (raw := current.get("started_at")):
         return None
     parsed = dt_util.parse_datetime(raw)
     if parsed is None:

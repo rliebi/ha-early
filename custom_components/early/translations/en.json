@@ -107,6 +107,9 @@
     "nothing_tracking": {
       "message": "There is no tracking currently running."
     },
+    "already_tracking": {
+      "message": "A tracking is already in progress. Stop it first, or use the Activity selector to switch."
+    },
     "auth_error": {
       "message": "Authentication with the EARLY API failed. Check your API Key and Secret."
     },

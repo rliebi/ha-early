@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from homeassistant.components.select import SelectEntity
 from homeassistant.exceptions import HomeAssistantError
 
+from .api import EarlyApiClientConflictError
 from .const import DOMAIN
 from .entity import EarlyEntity
 
@@ -25,6 +26,14 @@ if TYPE_CHECKING:
 # Sentinel option used to represent "no tracking running". It is translated via
 # the select entity's state translations; activity names are shown as-is.
 OPTION_NOT_TRACKING = "not_tracking"
+
+
+def _tracking_activity_id(tracking: dict | None) -> str | None:
+    """Return the activity id of a raw tracking object (handles both shapes)."""
+    if not tracking:
+        return None
+    raw = tracking.get("activityId") or (tracking.get("activity") or {}).get("id")
+    return str(raw) if raw is not None else None
 
 
 async def async_setup_entry(
@@ -53,14 +62,8 @@ class EarlyActivitySelect(EarlyEntity, SelectEntity):
 
     def _current_activity_name(self) -> str | None:
         """Return the name of the currently tracked activity, if any."""
-        data = self.coordinator.data or {}
-        current = data.get("current_tracking")
-        if not current:
-            return None
-        activity_id = current.get("activityId")
-        if activity_id is None:
-            return None
-        return data.get("activity_names", {}).get(str(activity_id))
+        current = (self.coordinator.data or {}).get("current_tracking")
+        return current.get("activity_name") if current else None
 
     @property
     def options(self) -> list[str]:
@@ -88,7 +91,7 @@ class EarlyActivitySelect(EarlyEntity, SelectEntity):
             return
         client = self.coordinator.config_entry.runtime_data.client
         current = await client.async_get_current_tracking()
-        current_id = str(current["activityId"]) if current else None
+        current_id = _tracking_activity_id(current)
 
         if option == OPTION_NOT_TRACKING:
             if current_id is not None:
@@ -103,7 +106,13 @@ class EarlyActivitySelect(EarlyEntity, SelectEntity):
         if current_id is not None:
             # EARLY only allows one active tracking, so stop the old one first.
             await client.async_stop_tracking()
-        await client.async_start_tracking(target_id)
+        try:
+            await client.async_start_tracking(target_id)
+        except EarlyApiClientConflictError:
+            # A tracking is still in progress (e.g. started elsewhere) — stop it
+            # and try once more.
+            await client.async_stop_tracking()
+            await client.async_start_tracking(target_id)
         await self.coordinator.async_request_refresh()
 
     def _resolve_activity_id(self, name: str) -> str:
