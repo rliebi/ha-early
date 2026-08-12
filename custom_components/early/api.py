@@ -18,8 +18,13 @@ from .const import LOGGER
 # EARLY Public API v4 (formerly the Timeular API). See https://developers.early.app/.
 API_BASE = "https://api.early.app/api/v4"
 
-# Number of seconds each individual request is allowed to take.
-REQUEST_TIMEOUT = 10
+# Overall per-request budget. Generous on purpose: on Home Assistant OS the
+# first (cold) DNS lookup through the Supervisor resolver can take several
+# seconds, and this budget has to cover DNS + connect + TLS + response.
+REQUEST_TIMEOUT = 45
+
+# Tighter cap on just establishing the TCP/TLS connection.
+CONNECT_TIMEOUT = 20
 
 # Refresh the bearer token this many seconds before it actually expires, so a
 # request never goes out with a token that is about to lapse.
@@ -247,28 +252,34 @@ class EarlyApiClient:
         if headers:
             request_headers.update(headers)
 
+        # aiohttp's own timeout covers DNS resolution + connect + TLS + response,
+        # unlike a bare asyncio.timeout that only wraps the awaited coroutine.
+        timeout = aiohttp.ClientTimeout(
+            total=REQUEST_TIMEOUT,
+            connect=CONNECT_TIMEOUT,
+        )
         try:
-            async with asyncio.timeout(REQUEST_TIMEOUT):
-                response = await self._session.request(
-                    method=method,
-                    url=url,
-                    headers=request_headers,
-                    json=data,
+            response = await self._session.request(
+                method=method,
+                url=url,
+                headers=request_headers,
+                json=data,
+                timeout=timeout,
+            )
+            _verify_response_or_raise(response)
+            text = await response.text()
+            if response.status >= 400:  # noqa: PLR2004 - HTTP error range
+                detail = _extract_error_message(text) or text[:200]
+                LOGGER.debug(
+                    "EARLY API %s %s -> HTTP %s: %s",
+                    method,
+                    url,
+                    response.status,
+                    detail,
                 )
-                _verify_response_or_raise(response)
-                text = await response.text()
-                if response.status >= 400:  # noqa: PLR2004 - HTTP error range
-                    detail = _extract_error_message(text) or text[:200]
-                    LOGGER.debug(
-                        "EARLY API %s %s -> HTTP %s: %s",
-                        method,
-                        url,
-                        response.status,
-                        detail,
-                    )
-                    msg = f"EARLY API returned HTTP {response.status}: {detail}"
-                    raise EarlyApiClientCommunicationError(msg)  # noqa: TRY301
-                return json.loads(text) if text else {}
+                msg = f"EARLY API returned HTTP {response.status}: {detail}"
+                raise EarlyApiClientCommunicationError(msg)  # noqa: TRY301
+            return json.loads(text) if text else {}
 
         except TimeoutError as exception:
             LOGGER.debug("Timeout calling %s %s", method, url)
